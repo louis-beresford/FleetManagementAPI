@@ -1,0 +1,40 @@
+pipeline {
+  agent { label "linux" }
+  stage("test"){
+        try {
+          sh """ newman run process.env.POSTMAN_COLLECTION"""
+        }
+        catch (err){
+          throw err
+          return
+        }
+
+      }
+  stages {
+      stage("setup") {
+      steps {
+        sh """
+  docker ps -a \
+    | awk '{ print \$1,\$2 }' \
+    | grep backend \
+    | awk '{print \$1 }' \
+    | xargs -I {} docker rm -f {}
+  """
+      }
+    }
+    stage("build") {
+      steps {
+        sh """
+          docker build -t backend .
+        """
+      }
+    }
+    stage("run") {
+      steps {
+        sh """
+          docker run --rm backend
+        """
+      }
+    }
+  }
+}
